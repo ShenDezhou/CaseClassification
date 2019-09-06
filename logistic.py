@@ -39,8 +39,9 @@ for filename in os.listdir(u"./cases"):
         with codecs.open("./cases/"+filename, 'r', encoding='utf-8') as f:
             for text in f:
                 xy = text.split('|')
-                data.append(xy[0])
-                data_labels.append(xy[1])
+                if len(xy) >1:
+                    data.append(xy[1])
+                    data_labels.append(xy[0])
         
         print(len(data), len(data_labels))
         
