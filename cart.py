@@ -8,7 +8,7 @@ Created on 2019年5月17日
 from sklearn.feature_extraction.text import CountVectorizer
 import os
 import codecs
-from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
 import numpy
 from sklearn.model_selection import train_test_split
@@ -31,13 +31,15 @@ STATE=1234
 before_model = datetime.datetime.now()
         
 for filename in os.listdir(u"./cases"):
-    if filename != 'civil.txt':
+    if filename == 'execution.txt':
         continue
     data = []
     data_labels = []
-    log_model = LogisticRegression()
+    cart_model = DecisionTreeClassifier(max_depth=15)
+    
     if filename.endswith(".txt"):
         token = filename.replace(".txt","")
+        
         with codecs.open("./cases/"+filename, 'r', encoding='utf-8') as f:
             for text in f:
                 xy = text.split('|')
@@ -73,23 +75,21 @@ for filename in os.listdir(u"./cases"):
         print("4:split", train_percent)
         
         before_training = datetime.datetime.now()
-        log_model = LogisticRegression(solver='newton-cg', max_iter=100, random_state=STATE,
-                                     multi_class='multinomial').fit(X=X_train, y=y_train)
-            
+        cart_model = cart_model.fit(X=X_train, y=y_train)
         after_training = datetime.datetime.now()
         
-        with open("./model/"+token+"logistic.pkl", "wb") as f:
-            s = pickle.dumps(log_model)
+        with open("./model/"+token+"decisiontree.pkl", "wb") as f:
+            s = pickle.dumps(cart_model)
             f.write(s)
             print("5-1 pickle:", len(s))
          
-        train_pred = log_model.predict(X_train)
+        train_pred = cart_model.predict(X_train)
         print(token,'@train-accuracy-score', accuracy_score(y_train, train_pred))
-        print(token, "@train-mean-accuracy-score : %.3f " % log_model.score(X_train, y_train))
+        print(token, "@train-mean-accuracy-score : %.3f " % cart_model.score(X_train, y_train))
         
         print("5:training time(sec):", str((after_training-before_training).total_seconds()))
         
-        y_pred = log_model.predict(X_test)
+        y_pred = cart_model.predict(X_test)
         print(token,'@test-score', accuracy_score(y_test, y_pred))
         print("6:test")
             
