@@ -18,14 +18,21 @@ import pickle
 from functools import partial
 from pathlib import Path
 
+
+def cut(text, aseg):
+    return aseg.cut(text)
+
+
 if __name__ == "__main__":
     token = 'execution'
+    sample=[]
+    sample_labels=[]
     with codecs.open("./cases/" + token + ".txt", 'r', encoding='utf-8') as f:
         for text in f:
             xy = text.split('|')
             if len(xy) > 1:
-                sample = xy[1]
-                sample_labels = xy[0]
+                sample.append(xy[1])
+                sample_labels.append(xy[0])
                 break
         
     with open("./model/" + token + "countvectorizer.pkl", "rb") as f:
