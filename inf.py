@@ -18,7 +18,6 @@ import pickle
 from functools import partial
 from pathlib import Path
 
-
 def cut(text, aseg):
     return aseg.cut(text)
 
