@@ -17,13 +17,21 @@ import datetime
 import pickle
 from functools import partial
 from pathlib import Path
+import argparse
+
 
 def cut(text, aseg):
     return aseg.cut(text)
 
 
 if __name__ == "__main__":
-    token = 'execution'
+    
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('--category', choices=["execution","civil","criminal", "statecompensation","administrative"],
+                        help='cases category:"execution","civil","criminal", "statecompensation","administrative"')
+    args = parser.parse_args()
+    
+    token = args.category
     sample=[]
     sample_labels=[]
     with codecs.open("./cases/" + token + ".txt", 'r', encoding='utf-8') as f:
@@ -42,7 +50,7 @@ if __name__ == "__main__":
     
     features = vectorizer.transform(
             sample
-        )
+            )
     features_nd = features.toarray()
     
     with open("./model/" + token + "decisiontree.pkl", "rb") as f:
@@ -51,7 +59,7 @@ if __name__ == "__main__":
         print("2:decisiontree", len(s))
     
     sample_pred = cart_model.predict(features_nd)
-    print("3:expected:", sample_labels, "actual:", sample_pred)
+    print("3:", token, "expected:", sample_labels, "actual:", sample_pred)
     
     print("ALL-DONE")
     

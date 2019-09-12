@@ -124,9 +124,9 @@ for filename in os.listdir(u"./cases"):
             print("5-2 pickle:", len(s))
           
         train_pred = model.predict(X_train)
-        print(token, '@train-accuracy-score', accuracy_score(y_train, train_pred))
+        print(token, '@train-accuracy-score', model.score(y_train, train_pred))
         print("5:training time(sec):", str((after_training - before_training).total_seconds()))
          
         y_pred = model.predict(X_test)
-        print(token, '@test-score', accuracy_score(y_test, y_pred))
+        print(token, '@test-score', model.score(y_test, y_pred))
         print("6:test")

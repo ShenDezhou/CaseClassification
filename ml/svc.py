@@ -32,7 +32,7 @@ STATE = 1234
 before_model = datetime.datetime.now()
         
 for filename in os.listdir(u"./cases"):
-    if filename == 'execution.txt':
+    if filename != 'statecompensation.txt':
         continue
     data = []
     data_labels = []
@@ -63,6 +63,7 @@ for filename in os.listdir(u"./cases"):
         print("4:split", train_percent)
         
         before_training = datetime.datetime.now()
+        
         svc_model = SVC(kernel='rbf', gamma=0.1)
         svc_model = svc_model.fit(X=X_train, y=y_train)
         after_training = datetime.datetime.now()

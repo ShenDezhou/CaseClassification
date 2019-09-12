@@ -28,11 +28,12 @@ cutanalyzer = partial(cut, aseg=seg)
 
 train_percent = 0.8
 STATE = 1234
+Dense=False
 
 before_model = datetime.datetime.now()
         
 for filename in os.listdir(u"./cases"):
-    if filename != 'execution.txt':
+    if filename != 'civil.txt':
         continue
     data = []
     data_labels = []
@@ -55,15 +56,23 @@ for filename in os.listdir(u"./cases"):
         features = vectorizer.fit_transform(
             data
         )
-        
+          
         with open("./model/" + token + "countvectorizer.pkl", "wb") as f:
             s = pickle.dumps(vectorizer)
             f.write(s)
             print("2:vectorizer", len(s))
+
+        if Dense:
+            features_nd = features.toarray()
+            numpy.savez_compressed("./numpy/" + token + ".npz", nd=features_nd)
+            print("3:" + token + ".npz")
+        else:
+            features_nd = features.tocsr()
+            with open("./numpy/" + token + "csr.pkl", "wb") as f:
+                s = pickle.dumps(features_nd)
+                f.write(s)
+                print("3 numpy:", len(s))
             
-        features_nd = features.toarray()
-        numpy.savez_compressed("./numpy/" + token + ".npz", nd=features_nd)
-        print("3:" + token + ".npz")
         
         with open("./tags/" + token + "-y.pkl", "wb") as f:
             s = pickle.dumps(data_labels)

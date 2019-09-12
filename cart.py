@@ -17,6 +17,7 @@ import datetime
 import pickle
 from functools import partial
 import math
+from scipy.sparse import csc_matrix
 
 seg = pkuseg.pkuseg(model_name='web')
 
@@ -33,7 +34,7 @@ STATE = 1234
 before_model = datetime.datetime.now()
         
 for filename in os.listdir(u"./cases"):
-    if filename == 'execution.txt':
+    if filename != 'criminal.txt':
         continue
     data = []
     data_labels = []
@@ -41,17 +42,23 @@ for filename in os.listdir(u"./cases"):
     if filename.endswith(".txt"):
         token = filename.replace(".txt", "")
         
-        with codecs.open("./cases/" + filename, 'r', encoding='utf-8') as f:
-            for text in f:
-                xy = text.split('|')
-                if len(xy) > 1:
-                    data.append(xy[1])
-                    data_labels.append(xy[0])
+#         with codecs.open("./cases/" + filename, 'r', encoding='utf-8') as f:
+#             for text in f:
+#                 xy = text.split('|')
+#                 if len(xy) > 1:
+#                     data.append(xy[1])
+#                     data_labels.append(xy[0])
+#          
+#         print(len(data), len(data_labels))
         
-        print(len(data), len(data_labels))
+        #features_nd = numpy.load("./numpy/" + token + ".npz")["nd"]
         
-        features_nd = numpy.load("./numpy/" + token + ".npz")["nd"]
-        print("3:" + token + ".npz")
+        #print("3:" + token + ".npz")
+        with open("./numpy/"+token+"csr.pkl", "rb") as f:
+            s=f.read()
+            features_nd = pickle.loads(s)
+            print("3 numpy pickle:", len(s))
+
         with open("./tags/" + token + "-y.pkl", "rb") as f:
             s = f.read()
             data_labels = pickle.loads(s)
@@ -61,10 +68,11 @@ for filename in os.listdir(u"./cases"):
                                                             data_labels,
                                                             train_size=train_percent,
                                                             random_state=STATE)
+        
         print("4:split", train_percent)
         
         before_training = datetime.datetime.now()
-        depth = math.ceil(math.log(features_nd.size))
+        depth = math.ceil(math.log(features_nd.data.nbytes)) * 5
         cart_model = DecisionTreeClassifier(max_depth=depth)
         print("5-1 max-depth:", depth)
         cart_model = cart_model.fit(X=X_train, y=y_train)
