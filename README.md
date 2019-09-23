@@ -19,12 +19,14 @@ ALL-DONE 1.021243
 3:statecompensation.npz
 3-1 tags pickle: 263191
 4:split 0.8
-5-1 max-depth: 44
-5-2 pickle: 3920330
-statecompensation @train-accuracy-score 0.343204110228865
-5:training time(sec): 951.801911
-statecompensation @test-score 0.14157639148300336
+5-1 max-depth: 100
+5-2 pickle: 6604506
+statecompensation @train-accuracy-score 0.4389537599252686
+5:training time(sec): 404.14598
+statecompensation @test-score 0.1326111318640269
 6:test
+ALL-DONE 472.537141
+
 
 
 >21402 21402
@@ -43,13 +45,14 @@ ALL-DONE 2291.243489
 >3 numpy pickle: 402570710
 3-1 tags pickle: 1280329
 4:split 0.8
-5-1 max-depth: 100
-5-2 pickle: 16220336
-criminal @train-accuracy-score 0.2665526422513357
-5:training time(sec): 337.498033
-criminal @test-score 0.2128499894209747
+5-1 max-depth: 200
+5-2 pickle: 46802352
+criminal @train-accuracy-score 0.4904695572443708
+5:training time(sec): 648.926594
+criminal @test-score 0.35467945553283026
 6:test
-ALL-DONE 341.058158
+ALL-DONE 652.556698
+
 
 
 >3 numpy pickle: 509268058
