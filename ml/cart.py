@@ -35,7 +35,7 @@ max_depth = 200
 before_model = datetime.datetime.now()
         
 for filename in os.listdir(u"./cases"):
-    if filename != 'civil.txt':
+    if filename != 'statecompensation.txt':
         continue
     data = []
     data_labels = []
@@ -74,8 +74,10 @@ for filename in os.listdir(u"./cases"):
         
         before_training = datetime.datetime.now()
         depth = math.ceil(math.log(features_nd.data.nbytes)) * 5
-        if token == 'civil':
+        if token in ['civil','criminal']:
             depth = 200
+        if token in ['statecompensation']:
+            depth = 100
         cart_model = DecisionTreeClassifier(max_depth=depth)
         print("5-1 max-depth:", depth)
         cart_model = cart_model.fit(X=X_train, y=y_train)
