@@ -30,11 +30,12 @@ cutanalyzer = partial(cut, aseg=seg)
 
 train_percent = 0.8
 STATE = 1234
+max_depth = 200
 
 before_model = datetime.datetime.now()
         
 for filename in os.listdir(u"./cases"):
-    if filename != 'criminal.txt':
+    if filename != 'civil.txt':
         continue
     data = []
     data_labels = []
@@ -51,11 +52,11 @@ for filename in os.listdir(u"./cases"):
 #          
 #         print(len(data), len(data_labels))
         
-        #features_nd = numpy.load("./numpy/" + token + ".npz")["nd"]
+        # features_nd = numpy.load("./numpy/" + token + ".npz")["nd"]
         
-        #print("3:" + token + ".npz")
-        with open("./numpy/"+token+"csr.pkl", "rb") as f:
-            s=f.read()
+        # print("3:" + token + ".npz")
+        with open("./numpy/" + token + "csr.pkl", "rb") as f:
+            s = f.read()
             features_nd = pickle.loads(s)
             print("3 numpy pickle:", len(s))
 
@@ -73,6 +74,8 @@ for filename in os.listdir(u"./cases"):
         
         before_training = datetime.datetime.now()
         depth = math.ceil(math.log(features_nd.data.nbytes)) * 5
+        if token == 'civil':
+            depth = 200
         cart_model = DecisionTreeClassifier(max_depth=depth)
         print("5-1 max-depth:", depth)
         cart_model = cart_model.fit(X=X_train, y=y_train)

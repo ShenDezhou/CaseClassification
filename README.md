@@ -55,12 +55,13 @@ ALL-DONE 341.058158
 >3 numpy pickle: 509268058
 3-1 tags pickle: 2117222
 4:split 0.8
-5-1 max-depth: 100
-5-2 pickle: 45392270
-civil @train-accuracy-score 0.23058727569331158
-5:training time(sec): 621.99451
-civil @test-score 0.16825914705196923
+5-1 max-depth: 200
+5-2 pickle: 136267294
+civil @train-accuracy-score 0.486599860172454
+5:training time(sec): 1317.371056
+civil @test-score 0.31489163365182943
 6:test
-ALL-DONE 627.036083
+ALL-DONE 1322.571882
+
 
 ==

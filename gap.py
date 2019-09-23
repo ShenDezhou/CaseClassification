@@ -33,16 +33,16 @@ from keras.callbacks import EarlyStopping
 rnn_size = 128  # size of RNN
 batch_size = 30  # minibatch size
 seq_length = 15  # sequence length
-num_epochs = 8  # number of epochs
+num_epochs = 50  # number of epochs
 learning_rate = 0.001  # learning rate
 sequences_step = 1  # step to create sequences
 
 ngram_range = 1
 max_features = 20000
 maxlen = 400
-batch_size = 32
-embedding_dims = 50
-epochs = 5
+batch_size = 2
+embedding_dims = 200
+epochs = 50
 
 train_percent = 0.8
 STATE = 1234
@@ -91,7 +91,7 @@ def add_ngram(sequences, token_indice, ngram_range=2):
 
 
 for filename in os.listdir(u"./cases"):
-    if filename != 'execution.txt':
+    if filename != 'civil.txt':
         continue
     data = []
     data_labels = []
@@ -111,7 +111,6 @@ for filename in os.listdir(u"./cases"):
             with open("./numpy/" + token + "csr.pkl", "rb") as f:
                 s = f.read()
                 features_nd = pickle.loads(s)
-                
                 print("3 numpy pickle:", len(s))
         else:
             features_nd = numpy.load("./numpy/" + token + ".npz")["nd"]
@@ -126,11 +125,16 @@ for filename in os.listdir(u"./cases"):
         data_labels = lbe.fit_transform(data_labels).tolist()
         data_labels = to_categorical(data_labels, dtype=int)
         print("3-2 label encode:", len(data_labels), data_labels.shape)
-        
-        X_train, X_test, y_train, y_test = train_test_split(features_nd,
-                                                            data_labels,
-                                                            train_size=train_percent,
-                                                            random_state=STATE)
+
+        ratio = int(features_nd.shape[0] * train_percent)  # should be int
+        X_train = features_nd[:ratio, :]
+        X_test = features_nd[ratio:, :]
+        y_train = data_labels[:ratio, :]
+        y_test = data_labels[ratio:, :]
+#         X_train, X_test, y_train, y_test = train_test_split(features_nd,
+#                                                             data_labels,
+#                                                             train_size=train_percent,
+#                                                             random_state=STATE)
         print("4:split", train_percent)
         
         before_training = datetime.datetime.now()
@@ -154,7 +158,7 @@ for filename in os.listdir(u"./cases"):
         # adam optimizer
         optimizer = Adam(lr=learning_rate)
         model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-        earlystop = [EarlyStopping(monitor='loss', min_delta=1e-3, patience=3, verbose=1, mode='min')]
+        earlystop = [EarlyStopping(monitor='loss', min_delta=1e-4, patience=3, verbose=1, mode='min')]
         # fit the model
         model.fit(X_train, y_train, batch_size=batch_size, epochs=num_epochs, validation_data=(X_test, y_test), callbacks=earlystop)
         after_training = datetime.datetime.now()
@@ -167,9 +171,9 @@ for filename in os.listdir(u"./cases"):
         train_pred = model.predict(X_train)
         print(token, '@train-accuracy-score', model.evaluate(X_train, y_train, batch_size=batch_size))
         print("5:training time(sec):", str((after_training - before_training).total_seconds()))
-        print("5.1:decode expect", lbe.inverse_transform(numpy.argmax(y_train, axis=1)), ",actual:", lbe.inverse_transform(argmax(train_pred, axis=1))) 
+#         print("5.1:decode expect", lbe.inverse_transform(numpy.argmax(y_train, axis=1)), ",actual:", lbe.inverse_transform(argmax(train_pred, axis=1))) 
         
         test_pred = model.predict(X_test)
         print(token, '@test-score', model.evaluate(X_test, y_test, batch_size=batch_size))
         print("6:test")
-        print("6.1:decode expect", lbe.inverse_transform(argmax(y_test, axis=1)), ",actual:", lbe.inverse_transform(argmax(test_pred, axis=1)))
+#         print("6.1:decode expect", lbe.inverse_transform(argmax(y_test, axis=1)), ",actual:", lbe.inverse_transform(argmax(test_pred, axis=1)))
