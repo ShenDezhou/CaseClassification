@@ -21,13 +21,17 @@ from functools import partial
 import math
 
 from keras.models import Sequential
-from keras.layers import Dense, Activation
-from keras.layers import Embedding, GlobalAveragePooling1D
+from keras.layers import Dense, Dropout, Activation
+from keras.layers import Embedding
+from keras.layers import Conv1D, GlobalMaxPooling1D, Flatten
+
 from keras.optimizers import Adam
 from keras.utils import to_categorical
 from numpy import argmax
 
 from keras.callbacks import EarlyStopping
+from keras.models import load_model
+
 # data_dir = 'data/Artistes_et_Phalanges-David_Campion'  # data directory containing input.txt
 # save_dir = 'save'  # directory to store models
 rnn_size = 128  # size of RNN
@@ -39,59 +43,19 @@ sequences_step = 1  # step to create sequences
 
 ngram_range = 1
 max_features = 20000
-maxlen = 400
-batch_size = 2
-embedding_dims = 200
-epochs = 50
+maxlen = 20000
+batch_size = 1
+embedding_dims = 50
+filters = 250
+kernel_size = 3
+hidden_dims = 250
+epochs = 200
 
-train_percent = 0.8
+train_percent = 0.99
 STATE = 1234
 
-
-def create_ngram_set(input_list, ngram_value=2):
-    """
-    Extract a set of n-grams from a list of integers.
-
-    >>> create_ngram_set([1, 4, 9, 4, 1, 4], ngram_value=2)
-    {(4, 9), (4, 1), (1, 4), (9, 4)}
-
-    >>> create_ngram_set([1, 4, 9, 4, 1, 4], ngram_value=3)
-    [(1, 4, 9), (4, 9, 4), (9, 4, 1), (4, 1, 4)]
-    """
-    return set(zip(*[input_list[i:] for i in range(ngram_value)]))
-
-
-def add_ngram(sequences, token_indice, ngram_range=2):
-    """
-    Augment the input list of list (sequences) by appending n-grams values.
-
-    Example: adding bi-gram
-    >>> sequences = [[1, 3, 4, 5], [1, 3, 7, 9, 2]]
-    >>> token_indice = {(1, 3): 1337, (9, 2): 42, (4, 5): 2017}
-    >>> add_ngram(sequences, token_indice, ngram_range=2)
-    [[1, 3, 4, 5, 1337, 2017], [1, 3, 7, 9, 2, 1337, 42]]
-
-    Example: adding tri-gram
-    >>> sequences = [[1, 3, 4, 5], [1, 3, 7, 9, 2]]
-    >>> token_indice = {(1, 3): 1337, (9, 2): 42, (4, 5): 2017, (7, 9, 2): 2018}
-    >>> add_ngram(sequences, token_indice, ngram_range=3)
-    [[1, 3, 4, 5, 1337, 2017], [1, 3, 7, 9, 2, 1337, 42, 2018]]
-    """
-    new_sequences = []
-    for input_list in sequences:
-        new_list = input_list[:]
-        for ngram_value in range(2, ngram_range + 1):
-            for i in range(len(new_list) - ngram_value + 1):
-                ngram = tuple(new_list[i:i + ngram_value])
-                if ngram in token_indice:
-                    new_list.append(token_indice[ngram])
-        new_sequences.append(new_list)
-
-    return new_sequences
-
-
 for filename in os.listdir(u"./cases"):
-    if filename != 'civil.txt':
+    if filename != 'accuse.txt':
         continue
     data = []
     data_labels = []
@@ -107,7 +71,7 @@ for filename in os.listdir(u"./cases"):
 #                     data_labels.append(xy[0])
 #         print(len(data), len(data_labels))
         
-        if token in ["civil", "criminal"]:
+        if token in ["civil", "criminal", "accuse"]:
             with open("./numpy/" + token + "csr.pkl", "rb") as f:
                 s = f.read()
                 features_nd = pickle.loads(s)
@@ -122,9 +86,14 @@ for filename in os.listdir(u"./cases"):
             print("3-1 tags pickle:", len(s))
         
         lbe = LabelEncoder()
-        data_labels = lbe.fit_transform(data_labels).tolist()
+        data_labels = lbe.fit_transform(data_labels)
+        with open("./model/" + token + "labelencoder.pkl", "wb") as f:
+            s = pickle.dumps(lbe)
+            f.write(s)
+            print("3-2 label encoder pickle:", len(s))
+            
         data_labels = to_categorical(data_labels, dtype=int)
-        print("3-2 label encode:", len(data_labels), data_labels.shape)
+        print("3-3 label encode:", len(data_labels))
 
         ratio = int(features_nd.shape[0] * train_percent)  # should be int
         X_train = features_nd[:ratio, :]
@@ -141,39 +110,57 @@ for filename in os.listdir(u"./cases"):
         # build the model: a single GAP
         print('5:Build GAP model.')
         model = Sequential()
+        model.add(Embedding(X_train.shape[1], \
+                    embedding_dims, \
+                    input_length=X_train.shape[1]))
+        model.add(Dropout(0.2))
 
-        # we start off with an efficient embedding layer which maps
-        # our vocab indices into embedding_dims dimensions
-        model.add(Embedding(features_nd.shape[1],
-                            embedding_dims,
-                            input_length=features_nd.shape[1]))
+        # we add a Convolution1D, which will learn filters
+        # word group filters of size filter_length:
+        model.add(Conv1D(filters, \
+                         kernel_size, \
+                         padding='valid', \
+                         activation='relu', \
+                         strides=1))
+        # we use max pooling:
+        model.add(GlobalMaxPooling1D())
         
-        # we add a GlobalAveragePooling1D, which will average the embeddings
-        # of all words in the document
-        model.add(GlobalAveragePooling1D())
+        # We add a vanilla hidden layer:
+        model.add(Dense(hidden_dims))
+        model.add(Dropout(0.2))
+        model.add(Activation('relu'))
         
         # We project onto a single unit output layer, and squash it with a sigmoid:
-        model.add(Dense(data_labels.shape[1], activation='softmax'))  
+        model.add(Dense(data_labels.shape[1]))
+        model.add(Activation('sigmoid'))
               
         # adam optimizer
         optimizer = Adam(lr=learning_rate)
-        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-        earlystop = [EarlyStopping(monitor='loss', min_delta=1e-4, patience=3, verbose=1, mode='min')]
+        model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        earlystop = [EarlyStopping(monitor='loss', min_delta=5e-3, patience=1, verbose=1, mode='min')]
+        #print model summary
+        print("summary",model.summary())
         # fit the model
         model.fit(X_train, y_train, batch_size=batch_size, epochs=num_epochs, validation_data=(X_test, y_test), callbacks=earlystop)
         after_training = datetime.datetime.now()
         
-        with open("./model/" + token + "gap.pkl", "wb") as f:
-            s = pickle.dumps(model)
+        with open("./model/" + token + "gapnetwork.pkl", "wb") as f:
+            s = pickle.dumps(model.to_json())
             f.write(s)
-            print("5-2 pickle:", len(s))
+            print("5-2 model network pickle:", len(s))
+            
+        with open("./model/" + token + "gapweights.pkl", "wb") as f:
+            s = pickle.dumps(model.get_weights())
+            f.write(s)
+            print("5-3 weight pickle:", len(s))
+        
           
-        train_pred = model.predict(X_train)
+        train_pred = model.predict(X_train, batch_size=batch_size)
         print(token, '@train-accuracy-score', model.evaluate(X_train, y_train, batch_size=batch_size))
         print("5:training time(sec):", str((after_training - before_training).total_seconds()))
 #         print("5.1:decode expect", lbe.inverse_transform(numpy.argmax(y_train, axis=1)), ",actual:", lbe.inverse_transform(argmax(train_pred, axis=1))) 
         
-        test_pred = model.predict(X_test)
+        test_pred = model.predict(X_test, batch_size=batch_size)
         print(token, '@test-score', model.evaluate(X_test, y_test, batch_size=batch_size))
         print("6:test")
 #         print("6.1:decode expect", lbe.inverse_transform(argmax(y_test, axis=1)), ",actual:", lbe.inverse_transform(argmax(test_pred, axis=1)))
