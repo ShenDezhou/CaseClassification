@@ -80,13 +80,23 @@ def cut(text, aseg):
 
 
 vectorizers = {}
-tokens = ["execution", "civil", "criminal", "administrative", "statecompensation"]
-
-for token in tokens:   
+decisiontrees = {}
+tokens = ["execution", "civil", "criminal", "administrative", "statecompensation", "accuse"]
+gapmodel = None
+for token in tokens:
     with open("./model/" + token + "countvectorizer.pkl", "rb") as f:
         s = f.read()
         print("1:vectorizer", len(s))
         vectorizers[token] = pickle.loads(s)
+    with open("./model/" + token + "decisiontree.pkl", "rb") as f:
+        s = f.read()
+        decisiontrees[token] = pickle.loads(s)
+        print("2:decisiontree", len(s))
+#     if token == "accuse":
+#         with open("./model/" + token + "labelencoder.pkl", "rb") as f:
+#             s = f.read()
+#             lbe = pickle.loads(s)
+#             print("2.1:labelencoder", len(s))
 
 
 class CaseResource:
@@ -97,7 +107,7 @@ class CaseResource:
         resp.set_header('Access-Control-Allow-Methods', '*')
         resp.set_header('Access-Control-Allow-Headers', '*')
         case = req.get_param('q', True)
-        token = req.get_param('category', True, default='execution')
+        token = req.get_param('category', True, default='accuse')
         
         sample = []
         sample_labels = []
@@ -108,13 +118,11 @@ class CaseResource:
                 sample
                 )
         features_nd = features.toarray()
-        
-        with open("./model/" + token + "decisiontree.pkl", "rb") as f:
-            s = f.read()
-            cart_model = pickle.loads(s)
-            print("2:decisiontree", len(s))
-        
-        sample_pred = cart_model.predict(features_nd)
+        print("1.0 input shape", features_nd.shape)
+
+
+            
+        sample_pred = decisiontrees[token].predict(features_nd)
         print("3:", token, "expected:", sample_labels, "actual:", sample_pred)
         
         print("ALL-DONE")
@@ -126,28 +134,24 @@ class CaseResource:
         resp.set_header('Access-Control-Allow-Methods', '*')
         resp.set_header('Access-Control-Allow-Headers', '*')
         case = req.get_param('q', True)
-        token = req.get_param('category', True, default='execution')
+        token = req.get_param('category', True, default='accuse')
         
         sample = []
         sample_labels = []
         sample.append(case)
-
         vectorizer = vectorizers[token]
         features = vectorizer.transform(
                 sample
                 )
         features_nd = features.toarray()
-        
-        with open("./model/" + token + "decisiontree.pkl", "rb") as f:
-            s = f.read()
-            cart_model = pickle.loads(s)
-            print("2:decisiontree", len(s))
-        
-        sample_pred = cart_model.predict(features_nd)
+        print("1.0 input shape", features_nd.shape)
+            
+        sample_pred = decisiontrees[token].predict(features_nd)
         print("3:", token, "expected:", sample_labels, "actual:", sample_pred)
         
         print("ALL-DONE")
         resp.media = {"category":token, "caseid":sample_pred[0]}
+
 
 api = falcon.API(middleware=[])
 api.req_options.auto_parse_form_urlencoded = True

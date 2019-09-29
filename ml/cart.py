@@ -55,10 +55,14 @@ for filename in os.listdir(u"./cases"):
         # features_nd = numpy.load("./numpy/" + token + ".npz")["nd"]
         
         # print("3:" + token + ".npz")
-        with open("./numpy/" + token + "csr.pkl", "rb") as f:
-            s = f.read()
-            features_nd = pickle.loads(s)
-            print("3 numpy pickle:", len(s))
+        if token in ["civil", "criminal"]:
+            with open("./numpy/" + token + "csr.pkl", "rb") as f:
+                s = f.read()
+                features_nd = pickle.loads(s)
+                print("3 numpy pickle:", len(s))
+        else:
+            features_nd = numpy.load("./numpy/" + token + ".npz")["nd"]
+            print("3:" + token + ".npz")
 
         with open("./tags/" + token + "-y.pkl", "rb") as f:
             s = f.read()

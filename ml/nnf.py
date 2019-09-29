@@ -18,7 +18,8 @@ import pickle
 from functools import partial
 from pathlib import Path
 import argparse
-
+from keras.models import model_from_json
+from sklearn.preprocessing import LabelEncoder
 
 def cut(text, aseg):
     return aseg.cut(text)
@@ -56,12 +57,27 @@ if __name__ == "__main__":
             )
     features_nd = features.toarray()
     
-    with open("./model/" + token + "decisiontree.pkl", "rb") as f:
+    with open("./tags/" + token + "-y.pkl", "rb") as f:
         s = f.read()
-        cart_model = pickle.loads(s)
-        print("2:decisiontree", len(s))
+        data_labels = pickle.loads(s)
+        print("3-1 tags pickle:", len(s))
+            
+    lbe = LabelEncoder()
+    data_labels = lbe.fit_transform(data_labels)
+        
+#     with open("./model/" + token + "labelencoder.pkl", "rb") as f:
+#         s = f.read()
+#         lbe = pickle.loads(s)
+#         print("2.1:labelencoder", len(s))
+        
+    cart_model = model_from_json(pickle.loads(open("./model/" + token + "gapnetwork.pkl", "rb").read()))
+    cart_model.set_weights(pickle.loads(open("./model/" + token + "gapweights.pkl", "rb").read()))
+    print("2.2:gapnetwork")
     
     sample_pred = cart_model.predict(features_nd)
+    #print(sample_pred)
+    sample_pred = lbe.inverse_transform(numpy.argmax(sample_pred, axis=1))
+
     print("3:", token, "expected:", sample_labels, "actual:", sample_pred)
     
     print("ALL-DONE")

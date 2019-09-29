@@ -37,7 +37,7 @@ from keras.models import load_model
 rnn_size = 128  # size of RNN
 batch_size = 30  # minibatch size
 seq_length = 15  # sequence length
-num_epochs = 50  # number of epochs
+num_epochs = 20000  # number of epochs
 learning_rate = 0.001  # learning rate
 sequences_step = 1  # step to create sequences
 
@@ -75,7 +75,7 @@ for filename in os.listdir(u"./cases"):
             with open("./numpy/" + token + "csr.pkl", "rb") as f:
                 s = f.read()
                 features_nd = pickle.loads(s)
-                print("3 numpy pickle:", len(s))
+                print("3 numpy pickle:", len(s), features_nd.shape)
         else:
             features_nd = numpy.load("./numpy/" + token + ".npz")["nd"]
             print("3:" + token + ".npz")
@@ -96,6 +96,7 @@ for filename in os.listdir(u"./cases"):
         print("3-3 label encode:", len(data_labels))
 
         ratio = int(features_nd.shape[0] * train_percent)  # should be int
+        
         X_train = features_nd[:ratio, :]
         X_test = features_nd[ratio:, :]
         y_train = data_labels[:ratio, :]
@@ -136,24 +137,24 @@ for filename in os.listdir(u"./cases"):
               
         # adam optimizer
         optimizer = Adam(lr=learning_rate)
-        model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-        earlystop = [EarlyStopping(monitor='loss', min_delta=5e-3, patience=1, verbose=1, mode='min')]
-        #print model summary
-        print("summary",model.summary())
+        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        earlystop = [EarlyStopping(monitor='loss', min_delta=5e-2, patience=1, verbose=1, mode='min')]
+        # print model summary
+        print("summary", model.summary())
         # fit the model
         model.fit(X_train, y_train, batch_size=batch_size, epochs=num_epochs, validation_data=(X_test, y_test), callbacks=earlystop)
         after_training = datetime.datetime.now()
         
-        with open("./model/" + token + "gapnetwork.pkl", "wb") as f:
-            s = pickle.dumps(model.to_json())
-            f.write(s)
-            print("5-2 model network pickle:", len(s))
-            
-        with open("./model/" + token + "gapweights.pkl", "wb") as f:
-            s = pickle.dumps(model.get_weights())
-            f.write(s)
-            print("5-3 weight pickle:", len(s))
-        
+#         with open("./model/" + token + "gapnetwork.pkl", "wb") as f:
+#             s = pickle.dumps(model.to_json())
+#             f.write(s)
+#             print("5-2 model network pickle:", len(s))
+#             
+#         with open("./model/" + token + "gapweights.pkl", "wb") as f:
+#             s = pickle.dumps(model.get_weights())
+#             f.write(s)
+#             print("5-3 weight pickle:", len(s))
+        model.save("./model/" + token + "gap.h5", overwrite=True)
           
         train_pred = model.predict(X_train, batch_size=batch_size)
         print(token, '@train-accuracy-score', model.evaluate(X_train, y_train, batch_size=batch_size))
